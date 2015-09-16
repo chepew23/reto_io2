@@ -1,0 +1,243 @@
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reto Investigaci&oacute;n de Operaciones 2</title>
+  <!-- jQuery -->
+  <script type="text/javascript" src="js/jquery-1.11.3.min.js"></script>
+
+  <!-- Bootstrap -->
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/general.js"></script>
+    <script src="js/incertidumbre.js"></script>
+    <script src="js/riesgo.js"></script>
+    <script type="text/javascript">
+    var tfoot="";
+    var thead="";
+    var tbody="";
+    var vn_columnas = 0;   
+    var vn_filas = 0; 
+    var matriz = [];
+    var va_prob = [];
+    $(document).ready(function(){
+      generaTabla();
+      $("#btnGenera").click(function(){
+        generaTabla();
+      })
+
+      $("#btnRiesgo").click(function(){
+
+        var vn_columnas = $("#estados").val();   
+        var vn_sumap = 0;
+        //recorre probabilidades
+        for (var j = 1; j <= vn_columnas; j++) {
+        //valida que tenga probabilidad mayor a cero
+        if (parseFloat($("#p"+j).val()) > 0) {
+
+        }else{
+          alert("La probabilidad del estado " + j + " debe ser mayor a cero");
+          return;
+        };
+
+        vn_sumap += parseInt($("#p"+j).val());
+        };
+        
+
+        generaMatriz();//Genera Matriz con los valores ingresados en el formulario
+        var alpha = $('#alfa').val();//obtiene valor de alpha
+        var esquema = $('#esquema').val();//obtiene valor del esquema
+        var v_k = $('#k').val();//obtiene valor de K
+        generaProbabilidades();//Genera Matriz con los valores de la probabilidades
+        var matriz_prm = matriz;
+        //Llama  función de valor esperado pasando los parametros {matriz, esquema, matriz_probabilidades}
+        var v_esperado = valor_esperado({matriz: matriz_prm, esquema: esquema, probabilidades: va_prob}); 
+
+        //Llama  función de dispersión pasando los parametros {matriz, esquema, matriz_probabilidades, k}
+        var v_dispersion = dispersion({matriz: matriz_prm, esquema: esquema, probabilidades: va_prob, v_k: v_k}); 
+
+        //Llama  función de maxima probabilidad pasando los parametros {matriz, esquema, matriz_probabilidades}
+        var v_maxp = maxima_probabilidad({matriz: matriz_prm, esquema: esquema, probabilidades: va_prob}); 
+
+        $('#vesperado').html(v_esperado);
+        $('#dispersion').html(v_dispersion);
+        $('#maxposibilidad').html(v_maxp);
+
+      })
+
+      $("#btnIncer").click(function(){
+        generaMatriz();
+        var alpha = $('#alfa').val();
+        var esquema = $('#esquema').val();
+        var matriz_prm = matriz;
+        var rs_wald = wald({matriz: matriz_prm, esquema: esquema});
+        var rs_laplace = laplace({matriz: matriz_prm, esquema: esquema});
+        var rs_hurwicz = hurwicz({matriz: matriz_prm, esquema: esquema, alpha: alpha});
+        $('#wald').html(rs_wald);
+        $('#laplace').html(rs_laplace);
+        $('#hurwicz').html(rs_hurwicz);
+      })
+
+    })
+    </script>
+  </head> 
+  <body>
+  <div class="panel panel-primary">
+  <div class="panel-heading">
+  <h3 class="panel-title">Reto Investigaci&oacute;n de Operaciones 2</h3>
+  </div>
+  <div class="panel-body">
+    
+    <div class="form-inline">
+                <div class="form-group">
+                    <label for="alternativa">Alternativas</label>
+                    <input id="alternativas" type="number" class="form-control" value="4" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="estados">Estados</label>
+                    <input id="estados" type="number" class="form-control" value="4" min="1" max="100" >
+                </div>
+                <div class="form-group">
+                    <label for="esquema">Esquema</label>
+                    
+                    <select id="esquema" class="form-control" >                        
+                        <option value="rentabilidad" selected="">Rentabilidad</option>
+                        <option value="costo">Costo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="alfa">&alpha;</label>
+                    <input id="alfa" type="text" class="form-control" value="0.6" >
+                </div>
+                <div class="form-group">
+                    <label for="k">K</label>
+                    <input id="k" type="text" class="form-control" value="1"  >
+                </div>
+                <button id="btnGenera" class="btn btn-primary">Generar Tabla</button>
+                <button id="btnRiesgo" type="button" class="btn btn-success">Resolver Riesgo</button>
+                <button id="btnIncer" type="button" class="btn btn-success">Resolver Incertidumbre</button>
+            </div>
+    <table id="tbMatriz" class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Alternativas</th>
+          <th>Estado 1</th>
+          <th>Estado 2</th>
+          <th>Estado 3</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><p>Alternativa 1</p></td>
+          <td><input type="text" id="x11" class="form-control" ></td>
+          <td><input type="text" id="x12" class="form-control" ></td>
+          <td><input type="text" id="x13" class="form-control" ></td>
+        </tr>
+        <tr>
+          <td><p>Alternativa 2</p></td>
+          <td><input type="text" id="x21" class="form-control" ></td>
+          <td><input type="text" id="x22" class="form-control" ></td>
+          <td><input type="text" id="x23" class="form-control" ></td>
+        </tr>
+        <tr>
+          <td><p>Alternativa 3</p></td>
+          <td><input type="text" id="x31" class="form-control" ></td>
+          <td><input type="text" id="x32" class="form-control" ></td>
+          <td><input type="text" id="x33" class="form-control" ></td>
+        </tr>
+        <tr>
+          <td><p>Alternativa 4</p></td>
+          <td><input type="text" id="x41" class="form-control" ></td>
+          <td><input type="text" id="x42" class="form-control" ></td>
+          <td><input type="text" id="x43" class="form-control" ></td>
+        </tr> 
+      </tbody>
+      <tfoot>
+        <tr>
+          <th>Probabilidades</th>
+          <th><input type="text" id="p1" class="form-control" ></th>
+          <th><input type="text" id="p2" class="form-control" ></th>
+          <th><input type="text" id="p3" class="form-control" ></th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+    
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="panel panel-success">
+          <div class="panel-heading">Resultados Riesgo</div>
+          <div class="panel-body">
+            <table  class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Criterio</th>
+                  <th>Alternativas</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Valor Esperado</td>
+                  <td id="vesperado"></td>
+                </tr>
+                <tr>
+                  <td>Disperción</td>
+                  <td id="dispersion"></td>
+                </tr>
+                <tr>
+                  <td>Max Posibilidad</td>
+                  <td id="maxposibilidad"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="panel panel-success">
+          <div class="panel-heading">Resultados Incertidumbre</div>
+          <div class="panel-body">
+            <table  class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Criterio</th>
+                  <th>Alternativas</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Wald</td>
+                  <td id="wald"></td>
+                </tr>
+                <tr>
+                  <td>Laplace</td>
+                  <td id="laplace"></td>
+                </tr>
+                <tr>
+                  <td>Hurwicz</td>
+                  <td id="hurwicz"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+    <footer class="bs-docs-footer" role="contentinfo">
+      <div class="panel panel-default">
+        <div class="panel-body">
+          <center><h5>
+              Power By <a href="https://github.com/chepew23/reto_io2" target="_blank">Jose Wisner Urrego </a> and
+               <a href="https://github.com/carlos841delgado/reto_io2" target="_blank">Carlos Enrique Delgado</a>
+          </h5></center>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
